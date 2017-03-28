@@ -1,3 +1,201 @@
+*******************
+Benchmark
+Benchmark
+**********************
+pgc++ -I. -w -acc -fast -ta=tesla:cc35,managed -Minline --c++11 -Mlarge_arrays -Minfo=accel --no_exceptions -O3 ET-su3.cc -o gpu-su3.x
+std::complex<float>& std::complex<float>::operator +=<float>(const std::complex<T1>&):
+      7, include "su3.h"
+           3, include "complex"
+             1146, Generating implicit acc routine seq
+su3::Su3<float>::~Su3():
+      7, include "su3.h"
+          29, Generating exit data delete(A[:],this[:1])
+su3::Su3<float>::operator =(const su3::Su3<float>&):
+      7, include "su3.h"
+          32, Generating acc routine seq
+ET::Lattice<su3::Su3<float>>::operator =(const su3::Su3<float> &):
+     71, Generating implicit copyin(this[:])
+         Generating copyin(splatme[:1])
+         Accelerator kernel generated
+         Generating Tesla code
+         32, #pragma acc loop seq
+         73, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+     71, Local memory used for _T47000408_2823
+          32, Complex loop carried dependence of imag(_odata+((ss)*72)->.A._M_value),imag(splatme->.A._M_value),real(_odata+((ss)*72)->.A._M_value),real(splatme->.A._M_value) prevents parallelization
+              Loop carried scalar dependence for .Q0069 at line 32
+ET::Lattice<su3::Su3<float>>& ET::Lattice<su3::Su3<float>>::operator =<ET::BinaryMul<su3::Su3<float>, su3::Su3<float>>, ET::Lattice<su3::Su3<float>>, ET::Lattice<su3::Su3<float>>>(const ET::LatticeBinaryExpression<T1, T2, T3> &):
+     82, Generating implicit copyin(this[:])
+         Generating copyin(expr[:1])
+         Accelerator kernel generated
+         Generating Tesla code
+         32, #pragma acc loop seq
+         44, #pragma acc loop seq
+         45, #pragma acc loop seq
+         46, #pragma acc loop seq
+         49, #pragma acc loop seq
+         50, #pragma acc loop seq
+         84, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+     82, Local memory used for ..inline,_T47000408_2824,_T47000704_2824
+                         44, Loop carried scalar dependence for .Q0070 at line 47
+                             Loop carried scalar dependence for .Q0071 at line 386
+                         45, Loop carried scalar dependence for .Q0070 at line 47
+                             Loop carried scalar dependence for .Q0071 at line 386
+                              46, Loop carried scalar dependence for .Q0070 at line 47
+                                  Loop carried scalar dependence for .Q0071 at line 386
+                         49, Loop carried dependence of real(..inline->.A._M_value) prevents parallelization
+                             Complex loop carried dependence of imag(..inline->.A._M_value),imag(..inline._M_value),real(..inline->.A._M_value),real(..inline._M_value) prevents parallelization
+                             Loop carried backward dependence of real(..inline->.A._M_value) prevents vectorization
+                             Loop carried dependence of real(..inline->.A._M_value) prevents vectorization
+                             Loop carried scalar dependence for .Q0072 at line 50
+                         50, Complex loop carried dependence of imag(..inline->.A._M_value),imag(..inline._M_value),real(..inline->.A._M_value),real(..inline._M_value) prevents parallelization
+                             Loop carried scalar dependence for .Q0072 at line 50
+          32, Complex loop carried dependence of imag(_T47000704_2824.A._M_value),imag(_odata+((ss)*72)->.A._M_value),real(_T47000704_2824.A._M_value),real(_odata+((ss)*72)->.A._M_value) prevents parallelization
+              Loop carried scalar dependence for .Q0073 at line 32
+std::complex<T1> std::operator *<float>(const std::complex<T1> &, const std::complex<T1> &):
+      7, include "su3.h"
+           3, include "complex"
+              382, Generating implicit acc routine seq
+su3::operator *=(su3::Su3<float>, const su3::Su3<float> &):
+      7, include "su3.h"
+          39, Generating acc routine seq
+su3::operator *(const su3::Su3<float> &, const su3::Su3<float> &):
+      7, include "su3.h"
+          60, Generating acc routine seq
+decltype((((param#2.Op).func)(eval(param#1, (param#2.arg1)), eval(param#1, (param#2.arg2))))) ET::eval<ET::BinaryMul<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1))), decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>, ET::Lattice<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>, ET::Lattice<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>>(unsigned int, const ET::LatticeBinaryExpression<T1, T2, T3> &):
+    115, Generating implicit acc routine seq
+====================================================================================================
+DISCLAIMER: THIS IS NOT Grid, but definitely looks like Grid
+====================================================================================================
+Grid is setup to use 1 threads
+====================================================================================================
+= Benchmarking SU3xSU3  x= x*y
+====================================================================================================
+  L             bytes                   GB/s             GFlop/s
+----------------------------------------------------------
+==31788== NVPROF is profiling process 31788, command: ./gpu-su3.x
+2               2.3e+03                 0.0145          0.0133
+4               3.69e+04                0.333           0.305
+6               1.87e+05                1.64            1.5
+8               5.9e+05                 4.56            4.18
+10              1.44e+06                9.39            8.61
+12              2.99e+06                14.8            13.6
+14              5.53e+06                22.7            20.8
+16              9.44e+06                28              25.7
+18              1.51e+07                32.1            29.4
+20              2.3e+07                 34.5            31.6
+22              3.37e+07                36.5            33.4
+24              4.78e+07                37.7            34.6
+26              6.58e+07                39              35.7
+28              8.85e+07                39.7            36.4
+30              1.17e+08                40.3            36.9
+32              1.51e+08                40.7            37.3
+==31788== Profiling application: ./gpu-su3.x
+==31788== Profiling result:
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 99.16%  20.1698s     16000  1.2606ms  10.080us  5.3757ms  _ZN2ET7LatticeIN3su33Su3IfEEEaSINS_9BinaryMulIS3_S3_EES4_S4_EERS4_RKNS_23LatticeBinaryExpressionIT_T0_T1_EE_82_gpu
+  0.44%  90.281ms        48  1.8809ms  5.9200us  8.3378ms  _ZN2ET7LatticeIN3su33Su3IfEEEaSERKS3__71_gpu
+  0.39%  80.059ms     32096  2.4940us  2.2400us  13.025us  [CUDA memcpy HtoD]
+
+==31788== Unified Memory profiling result:
+Device "Tesla K40m (0)"
+   Count  Avg Size  Min Size  Max Size  Total Size  Total Time  Name
+     459  1.7515MB  4.0000KB  2.0000MB  803.9531MB  138.2551ms  Host To Device
+   11276  73.109KB  4.0000KB  988.00KB  805.0664MB  139.0133ms  Device To Host
+Total CPU Page faults: 7083
+
+==31788== API calls:
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 87.98%  20.6231s     64192  321.27us  2.1190us  8.3428ms  cuStreamSynchronize
+  6.90%  1.61804s     16048  100.83us  48.320us  37.958ms  cuLaunchKernel
+  1.63%  381.18ms         1  381.18ms  381.18ms  381.18ms  cuDevicePrimaryCtxRetain
+  1.32%  309.84ms     32096  9.6530us  5.5300us  1.7099ms  cuMemcpyHtoDAsync
+  1.10%  258.35ms         1  258.35ms  258.35ms  258.35ms  cuDevicePrimaryCtxRelease
+  0.49%  115.36ms        96  1.2016ms  9.7790us  20.758ms  cuMemAllocManaged
+  0.26%  60.970ms         1  60.970ms  60.970ms  60.970ms  cuMemHostAlloc
+  0.25%  59.309ms     64194     923ns     349ns  788.82us  cuPointerGetAttributes
+  0.05%  12.181ms         1  12.181ms  12.181ms  12.181ms  cuMemFreeHost
+  0.00%  1.1239ms         1  1.1239ms  1.1239ms  1.1239ms  cuMemAllocHost
+  0.00%  622.07us         3  207.36us  16.169us  308.39us  cuMemAlloc
+  0.00%  390.70us         1  390.70us  390.70us  390.70us  cuModuleLoadData
+  0.00%  62.148us         1  62.148us  62.148us  62.148us  cuStreamCreate
+  0.00%  9.8740us         3  3.2910us  1.0190us  6.9910us  cuDeviceGetCount
+  0.00%  6.4490us         2  3.2240us  1.9850us  4.4640us  cuCtxSetCurrent
+  0.00%  5.9300us         2  2.9650us  1.0150us  4.9150us  cuModuleGetFunction
+  0.00%  4.5870us         2  2.2930us     591ns  3.9960us  cuMemFree
+  0.00%  4.3490us         3  1.4490us     869ns  1.9590us  cuDeviceGet
+  0.00%  3.7900us         4     947ns     534ns  1.4070us  cuDeviceGetAttribute
+  0.00%  1.5200us         1  1.5200us  1.5200us  1.5200us  cuDeviceComputeCapability
+  0.00%     952ns         1     952ns     952ns     952ns  cuCtxGetDevice
+
+==31788== OpenACC (excl):
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 87.47%  20.3156s     16000  1.2697ms  10.440us  5.6687ms  acc_compute_construct@ET-su3.cc:82
+  6.54%  1.51906s     16000  94.941us  50.392us  1.0394ms  acc_enqueue_launch@ET-su3.cc:82 (_ZN2ET7LatticeIN3su33Su3IfEEEaSINS_9BinaryMulIS3_S3_EES4_S4_EERS4_RKNS_23LatticeBinaryExpressionIT_T0_T1_EE_82_gpu)
+  1.53%  355.97ms     32000  11.123us  6.4920us  1.7117ms  acc_enqueue_upload@ET-su3.cc:82
+  1.53%  354.81ms     48000  7.3910us  3.3520us  584.23us  acc_wait@ET-su3.cc:82
+  0.92%  214.21ms     32000  6.6930us  4.3870us  802.37us  acc_enter_data@ET-su3.cc:82
+  0.69%  159.96ms     32000  4.9980us  2.5270us  570.21us  acc_exit_data@ET-su3.cc:82
+  0.64%  149.21ms        48  3.1085ms  60.619us  37.964ms  acc_enqueue_launch@ET-su3.cc:71 (_ZN2ET7LatticeIN3su33Su3IfEEEaSERKS3__71_gpu)
+  0.39%  90.877ms        48  1.8933ms  11.665us  8.3459ms  acc_compute_construct@ET-su3.cc:71
+  0.27%  62.910ms        96  655.32us  4.6150us  61.985ms  acc_enter_data@ET-su3.cc:71
+  0.01%  1.4025ms        96  14.608us  6.8500us  114.32us  acc_enqueue_upload@ET-su3.cc:71
+  0.01%  1.2684ms       144  8.8080us  3.4410us  32.083us  acc_wait@ET-su3.cc:71
+  0.00%  619.37us        96  6.4510us  2.7230us  75.651us  acc_exit_data@ET-su3.cc:71
+  0.00%  496.73us         1  496.73us  496.73us  496.73us  acc_device_init
+  0.00%  7.4430us         1  7.4430us  7.4430us  7.4430us  acc_exit_data@ET-su3.cc:29
+  0.00%       0ns     32000       0ns       0ns       0ns  acc_delete@ET-su3.cc:86
+  0.00%       0ns     32000       0ns       0ns       0ns  acc_create@ET-su3.cc:82
+  0.00%       0ns         2       0ns       0ns       0ns  acc_alloc@ET-su3.cc:71                                                                                                                                                                                                                                                                                              
+**********************
+pgc++ -I. -w -acc -fast -ta=tesla:cc35,managed -Minline --c++11 -Mlarge_arrays -Minfo=accel --no_exceptions -O3 ET-su3.cc -o gpu-su3.x
+std::complex<float>& std::complex<float>::operator +=<float>(const std::complex<T1>&):
+      7, include "su3.h"
+           3, include "complex"
+             1146, Generating implicit acc routine seq
+su3::Su3<float>::~Su3():
+      7, include "su3.h"
+          29, Generating exit data delete(A[:],this[:1])
+su3::Su3<float>::operator =(const su3::Su3<float>&):
+      7, include "su3.h"
+          32, Generating acc routine seq
+ET::Lattice<su3::Su3<float>>::operator =(const su3::Su3<float> &):
+     71, Generating implicit copyin(this[:])
+         Generating copyin(splatme[:1])
+         Accelerator kernel generated
+         Generating Tesla code
+         32, #pragma acc loop seq
+         73, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+     71, Local memory used for _T47000408_2823
+          32, Complex loop carried dependence of imag(_odata+((ss)*72)->.A._M_value),imag(splatme->.A._M_value),real(_odata+((ss)*72)->.A._M_value),real(splatme->.A._M_value) prevents parallelization
+              Loop carried scalar dependence for .Q0069 at line 32
+ET::Lattice<su3::Su3<float>>& ET::Lattice<su3::Su3<float>>::operator =<ET::BinaryMul<su3::Su3<float>, su3::Su3<float>>, ET::Lattice<su3::Su3<float>>, ET::Lattice<su3::Su3<float>>>(const ET::LatticeBinaryExpression<T1, T2, T3> &):
+     82, Generating implicit copyin(this[:])
+         Generating copyin(expr[:1])
+         Accelerator kernel generated
+         Generating Tesla code
+         32, #pragma acc loop seq
+         44, #pragma acc loop seq
+         45, #pragma acc loop seq
+         46, #pragma acc loop seq
+         49, #pragma acc loop seq
+         50, #pragma acc loop seq
+         84, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+     82, Local memory used for ..inline,_T47000408_2824,_T47000704_2824
+                         44, Loop carried scalar dependence for .Q0070 at line 47
+                             Loop carried scalar dependence for .Q0071 at line 386
+                         45, Loop carried scalar dependence for .Q0070 at line 47
+                             Loop carried scalar dependence for .Q0071 at line 386
+                              46, Loop carried scalar dependence for .Q0070 at line 47
+                                  Loop carried scalar dependence for .Q0071 at line 386
+                         49, Loop carried dependence of real(..inline->.A._M_value) prevents parallelization
+                             Complex loop carried dependence of imag(..inline->.A._M_value),imag(..inline._M_value),real(..inline->.A._M_value),real(..inline._M_value) prevents parallelization
+                             Loop carried backward dependence of real(..inline->.A._M_value) prevents vectorization
+                             Loop carried dependence of real(..inline->.A._M_value) prevents vectorization
+                             Loop carried scalar dependence for .Q0072 at line 50
+                         50, Complex loop carried dependence of imag(..inline->.A._M_value),imag(..inline._M_value),real(..inline->.A._M_value),real(..inline._M_value) prevents parallelization
+                             Loop carried scalar dependence for .Q0072 at line 50
+          32, Complex loop carried dependence of imag(_T47000704_2824.A._M_value),imag(_odata+((ss)*72)->.A._M_value),real(_T47000704_2824.A._M_value),real(_odata+((ss)*72)->.A._M_value) prevents parallelization
+******************
 inline Lattice<obj> & operator= (const obj & splatme)
     {
       int _osites=this->Osites();

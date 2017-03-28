@@ -1,0 +1,410 @@
+inline Lattice<obj> & operator= (const obj & splatme)
+    {
+      int _osites=this->Osites();
+     #pragma acc data copyin(splatme[0:1]) async(1)
+    // #pragma acc kernels copyin(splatme[0:1]) async(1)
+        {
+    // # pragma acc loop independent 
+     # pragma acc parallel loop independent gang async(4) 
+        for(int ss=0;ss<_osites;ss++){
+            _odata[ss] = splatme;
+      }
+     }
+      return *this;
+    }
+
+    template <typename Op, typename T1,typename T2> inline Lattice<obj> & operator=(const LatticeBinaryExpression<Op,T1,T2> &expr)
+    {
+      int _osites=this->Osites();
+     // #pragma acc kernels copyin(expr[0:1])
+    // {
+      #pragma acc data copyin(expr[0:1]) async(2)
+    {
+      #pragma acc parallel loop independent gang 
+     // #pragma acc kernels loop gang copyin(expr[0:1])
+      for(int ss=0;ss<_osites;ss++){
+            _odata[ss] = eval(ss,expr);
+      }
+    }
+      return *this;
+    }
+  };
+
+**********************
+**********************
+pgc++ -I. -w -acc -fast -ta=tesla:cc35,managed,nollvm  --c++11 -Mlarge_arrays -Minfo=accel --no_exceptions -O3 ET-su3.cc -o gpu-su3.x
+std::complex<float>& std::complex<float>::operator +=<float>(const std::complex<T1>&):
+      7, include "su3.h"
+           3, include "complex"
+             1146, Generating implicit acc routine seq
+su3::Su3<float>::~Su3():
+      7, include "su3.h"
+          29, Generating exit data delete(A[:],this[:1])
+su3::Su3<float>::operator =(const su3::Su3<float>&):
+      7, include "su3.h"
+          32, Generating acc routine seq
+ET::Lattice<su3::Su3<float>>::operator =(const su3::Su3<float> &):
+     74, Generating implicit copyin(this[:])
+         Generating copyin(splatme[:1])
+         Accelerator kernel generated
+         Generating Tesla code
+         32, #pragma acc loop seq
+         77, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+     74, Local memory used for _T21909640_2823
+          32, Complex loop carried dependence of imag(_odata+((ss)*72)->.A._M_value),imag(splatme->.A._M_value),real(_odata+((ss)*72)->.A._M_value),real(splatme->.A._M_value) prevents parallelization
+              Loop carried scalar dependence for .Q0011 at line 32
+ET::Lattice<su3::Su3<float>>& ET::Lattice<su3::Su3<float>>::operator =<ET::BinaryMul<su3::Su3<float>, su3::Su3<float>>, ET::Lattice<su3::Su3<float>>, ET::Lattice<su3::Su3<float>>>(const ET::LatticeBinaryExpression<T1, T2, T3> &):
+     90, Generating implicit copyin(this[:])
+         Generating copyin(expr[:1])
+         Accelerator kernel generated
+         Generating Tesla code
+         32, #pragma acc loop seq
+         93, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+     90, Local memory used for ..inline,_T21909640_2824,_T21909936_2824
+          32, Complex loop carried dependence of imag(_T21909936_2824.A._M_value),imag(_odata+((ss)*72)->.A._M_value),real(_T21909936_2824.A._M_value),real(_odata+((ss)*72)->.A._M_value) prevents parallelization
+              Loop carried scalar dependence for .Q0012 at line 32
+std::complex<T1> std::operator *<float>(const std::complex<T1> &, const std::complex<T1> &):
+      7, include "su3.h"
+           3, include "complex"
+              382, Generating implicit acc routine seq
+su3::operator *=(su3::Su3<float>, const su3::Su3<float> &):
+      7, include "su3.h"
+          39, Generating acc routine seq
+su3::operator *(const su3::Su3<float> &, const su3::Su3<float> &):
+      7, include "su3.h"
+          60, Generating acc routine seq
+decltype((((param#2.Op).func)(eval(param#1, (param#2.arg1)), eval(param#1, (param#2.arg2))))) ET::eval<ET::BinaryMul<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1))), decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>, ET::Lattice<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>, ET::Lattice<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>>(unsigned int, const ET::LatticeBinaryExpression<T1, T2, T3> &):
+    124, Generating implicit acc routine seq
+#pgc++ -I. -w -acc -fast -ta=multicore -Minline --c++11 -Mlarge_arrays -Minfo=accel --no_exceptions -O3 ET-su3.cc -o gpu-su3.x
+====================================================================================================
+DISCLAIMER: THIS IS NOT Grid, but definitely looks like Grid
+====================================================================================================
+Grid is setup to use 1 threads
+====================================================================================================
+= Benchmarking SU3xSU3  x= x*y
+====================================================================================================
+  L  		bytes			GB/s		 GFlop/s
+----------------------------------------------------------
+==32661== NVPROF is profiling process 32661, command: ./gpu-su3.x
+2		2.3e+03    		0.0152		0.0139
+4		3.69e+04    		0.413		0.378
+6		1.87e+05    		2.07		1.9
+8		5.9e+05    		6.02		5.52
+10		1.44e+06    		11.7		10.7
+12		2.99e+06    		15.7		14.4
+14		5.53e+06    		19.6		18
+16		9.44e+06    		22.6		20.7
+18		1.51e+07    		24.4		22.3
+20		2.3e+07    		25.3		23.2
+22		3.37e+07    		26.5		24.3
+24		4.78e+07    		28		25.7
+26		6.58e+07    		28.4		26.1
+28		8.85e+07    		28.8		26.4
+30		1.17e+08    		29		26.6
+32		1.51e+08    		29.2		26.7
+==32661== Profiling application: ./gpu-su3.x
+==32661== Profiling result:
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 99.53%  28.7827s     16000  1.7989ms  17.472us  7.6616ms  _ZN2ET7LatticeIN3su33Su3IfEEEaSINS_9BinaryMulIS3_S3_EES4_S4_EERS4_RKNS_23LatticeBinaryExpressionIT_T0_T1_EE_90_gpu
+  0.28%  80.198ms     32096  2.4980us  2.2400us  12.289us  [CUDA memcpy HtoD]
+  0.19%  55.999ms        48  1.1667ms  5.7600us  8.2916ms  _ZN2ET7LatticeIN3su33Su3IfEEEaSERKS3__74_gpu
+
+==32661== Unified Memory profiling result:
+Device "Tesla K40m (0)"
+   Count  Avg Size  Min Size  Max Size  Total Size  Total Time  Name
+     459  1.7515MB  4.0000KB  2.0000MB  803.9531MB  138.0115ms  Host To Device
+   11276  73.109KB  4.0000KB  988.00KB  805.0664MB  138.2948ms  Device To Host
+Total CPU Page faults: 7083
+
+==32661== API calls:
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 92.91%  29.0788s     48048  605.20us  2.1410us  8.3017ms  cuStreamSynchronize
+  3.42%  1.06970s     16048  66.655us  29.152us  37.747ms  cuLaunchKernel
+  1.27%  396.68ms         1  396.68ms  396.68ms  396.68ms  cuDevicePrimaryCtxRetain
+  0.91%  283.39ms     32096  8.8290us  5.1390us  1.5641ms  cuMemcpyHtoDAsync
+  0.70%  219.43ms         1  219.43ms  219.43ms  219.43ms  cuDevicePrimaryCtxRelease
+  0.36%  113.87ms        96  1.1861ms  8.3580us  20.672ms  cuMemAllocManaged
+  0.20%  61.769ms         1  61.769ms  61.769ms  61.769ms  cuMemHostAlloc
+  0.18%  55.995ms     64194     872ns     429ns  898.07us  cuPointerGetAttributes
+  0.05%  14.970ms         1  14.970ms  14.970ms  14.970ms  cuMemFreeHost
+  0.00%  1.1235ms         1  1.1235ms  1.1235ms  1.1235ms  cuMemAllocHost
+  0.00%  628.60us         3  209.53us  20.560us  308.43us  cuMemAlloc
+  0.00%  418.99us         1  418.99us  418.99us  418.99us  cuModuleLoadData
+  0.00%  60.144us         1  60.144us  60.144us  60.144us  cuStreamCreate
+  0.00%  10.540us         3  3.5130us  1.0060us  7.7690us  cuDeviceGetCount
+  0.00%  8.2640us         2  4.1320us  1.2430us  7.0210us  cuModuleGetFunction
+  0.00%  5.9690us         2  2.9840us  1.8280us  4.1410us  cuCtxSetCurrent
+  0.00%  4.6780us         2  2.3390us     642ns  4.0360us  cuMemFree
+  0.00%  4.5480us         3  1.5160us     872ns  2.0450us  cuDeviceGet
+  0.00%  3.7290us         4     932ns     561ns  1.3840us  cuDeviceGetAttribute
+  0.00%  1.3070us         1  1.3070us  1.3070us  1.3070us  cuDeviceComputeCapability
+  0.00%     885ns         1     885ns     885ns     885ns  cuCtxGetDevice
+
+==32661== OpenACC (excl):
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 93.15%  28.9144s     16000  1.8071ms  23.019us  7.9250ms  acc_compute_construct@ET-su3.cc:90
+  3.14%  973.25ms     16000  60.827us  31.232us  1.1189ms  acc_enqueue_launch@ET-su3.cc:90 (_ZN2ET7LatticeIN3su33Su3IfEEEaSINS_9BinaryMulIS3_S3_EES4_S4_EERS4_RKNS_23LatticeBinaryExpressionIT_T0_T1_EE_90_gpu)
+  1.05%  325.33ms     32000  10.166us  6.1080us  1.5661ms  acc_enqueue_upload@ET-su3.cc:90
+  0.70%  217.98ms     32000  6.8110us  3.3630us  566.55us  acc_wait@ET-su3.cc:90
+  0.61%  188.24ms     32000  5.8820us  3.9710us  543.80us  acc_enter_data@ET-su3.cc:90
+  0.49%  151.94ms     32000  4.7480us  2.4270us  912.53us  acc_exit_data@ET-su3.cc:90
+  0.47%  145.94ms        48  3.0405ms  39.339us  37.754ms  acc_enqueue_launch@ET-su3.cc:74 (_ZN2ET7LatticeIN3su33Su3IfEEEaSERKS3__74_gpu)
+  0.20%  63.503ms        96  661.49us  3.8300us  62.754ms  acc_enter_data@ET-su3.cc:74
+  0.18%  56.569ms        48  1.1785ms  16.777us  8.3065ms  acc_compute_construct@ET-su3.cc:74
+  0.00%  1.2412ms        96  12.928us  6.1530us  106.02us  acc_enqueue_upload@ET-su3.cc:74
+  0.00%  584.86us        96  6.0920us  2.6160us  93.606us  acc_exit_data@ET-su3.cc:74
+  0.00%  525.89us         1  525.89us  525.89us  525.89us  acc_device_init
+  0.00%  9.6440us         1  9.6440us  9.6440us  9.6440us  acc_exit_data@ET-su3.cc:29
+  0.00%       0ns        96       0ns       0ns       0ns  acc_create@ET-su3.cc:74
+  0.00%       0ns        48       0ns       0ns       0ns  acc_delete@ET-su3.cc:80
+  0.00%       0ns         2       0ns       0ns       0ns  acc_alloc@ET-su3.cc:74
+  0.00%       0ns     16000       0ns       0ns       0ns  acc_delete@ET-su3.cc:95
+  0.00%       0ns     16000       0ns       0ns       0ns  acc_delete@ET-su3.cc:96
+  0.00%       0ns        48       0ns       0ns       0ns  acc_delete@ET-su3.cc:79
+  0.00%       0ns     32000       0ns       0ns       0ns  acc_create@ET-su3.cc:90
+====================================================================================================
+DISCLAIMER: THIS IS NOT Grid, but definitely looks like Grid
+====================================================================================================
+Grid is setup to use 1 threads
+====================================================================================================
+= Benchmarking SU3xSU3  x= x*y
+====================================================================================================
+  L  		bytes			GB/s		 GFlop/s
+----------------------------------------------------------
+2		2.3e+03    		0.025		0.023
+4		3.69e+04    		0.371		0.34
+6		1.87e+05    		1.87		1.71
+8		5.9e+05    		5.46		5.01
+10		1.44e+06    		10.7		9.85
+12		2.99e+06    		14.9		13.6
+14		5.53e+06    		18.9		17.4
+16		9.44e+06    		22		20.1
+18		1.51e+07    		24.2		22.2
+20		2.3e+07    		26		23.8
+22		3.37e+07    		27		24.8
+24		4.78e+07    		27.6		25.3
+26		6.58e+07    		27.9		25.6
+28		8.85e+07    		28.4		26
+30		1.17e+08    		29		26.6
+32		1.51e+08    		29.2		26.7
+
+Accelerator Kernel Timing data
+    Timing may be affected by asynchronous behavior
+    set PGI_ACC_SYNCHRONOUS to 1 to disable async() clauses
+/lfs1/home/ccai/ET-SU3/ET-su3.cc
+  _ZN3su33Su3IfED1Ev  NVIDIA  devicenum=0
+    time(us): 0
+    29: data region reached 1 time
+/lfs1/home/ccai/ET-SU3/ET-su3.cc
+  _ZN2ET7LatticeIN3su33Su3IfEEEaSERKS3_  NVIDIA  devicenum=0
+    time(us): 74,833
+    74: compute region reached 48 times
+        74: kernel launched 48 times
+            grid: [1-8192]  block: [128]
+             device time(us): total=73,747 max=8,289 min=7 avg=1,536
+            elapsed time(us): total=222,283 max=46,010 min=60 avg=4,630
+    74: data region reached 192 times
+        74: data copyin transfers: 96
+             device time(us): total=1,086 max=53 min=5 avg=11
+/lfs1/home/ccai/ET-SU3/ET-su3.cc
+  _ZN2ET7LatticeIN3su33Su3IfEEEaSINS_9BinaryMulIS3_S3_EES4_S4_EERS4_RKNS_23LatticeBinaryExpressionIT_T0_T1_EE  NVIDIA  devicenum=0
+    time(us): 29,089,962
+    90: compute region reached 16000 times
+        90: kernel launched 16000 times
+            grid: [1-8192]  block: [128]
+             device time(us): total=28,815,536 max=7,664 min=19 avg=1,800
+            elapsed time(us): total=29,911,477 max=8,050 min=68 avg=1,869
+    90: data region reached 64000 times
+        90: data copyin transfers: 16000
+             device time(us): total=114,903 max=347 min=4 avg=7
+        90: data copyin transfers: 16000
+             device time(us): total=159,523 max=354 min=7 avg=9
+**********************
+Delete all the async clause
+
+**********************
+pgc++ -I. -w -acc -fast -ta=tesla:cc35,managed,nollvm  --c++11 -Mlarge_arrays -Minfo=accel --no_exceptions -O3 ET-su3.cc -o gpu-su3.x
+std::complex<float>& std::complex<float>::operator +=<float>(const std::complex<T1>&):
+      7, include "su3.h"
+           3, include "complex"
+             1146, Generating implicit acc routine seq
+su3::Su3<float>::~Su3():
+      7, include "su3.h"
+          29, Generating exit data delete(A[:],this[:1])
+su3::Su3<float>::operator =(const su3::Su3<float>&):
+      7, include "su3.h"
+          32, Generating acc routine seq
+ET::Lattice<su3::Su3<float>>::operator =(const su3::Su3<float> &):
+     74, Generating implicit copyin(this[:])
+         Generating copyin(splatme[:1])
+         Accelerator kernel generated
+         Generating Tesla code
+         32, #pragma acc loop seq
+         77, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+     74, Local memory used for _T44138632_2823
+          32, Complex loop carried dependence of imag(_odata+((ss)*72)->.A._M_value),imag(splatme->.A._M_value),real(_odata+((ss)*72)->.A._M_value),real(splatme->.A._M_value) prevents parallelization
+              Loop carried scalar dependence for .Q0011 at line 32
+ET::Lattice<su3::Su3<float>>& ET::Lattice<su3::Su3<float>>::operator =<ET::BinaryMul<su3::Su3<float>, su3::Su3<float>>, ET::Lattice<su3::Su3<float>>, ET::Lattice<su3::Su3<float>>>(const ET::LatticeBinaryExpression<T1, T2, T3> &):
+     90, Generating implicit copyin(this[:])
+         Generating copyin(expr[:1])
+         Accelerator kernel generated
+         Generating Tesla code
+         32, #pragma acc loop seq
+         93, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
+     90, Local memory used for ..inline,_T44138632_2824,_T44138928_2824
+          32, Complex loop carried dependence of imag(_T44138928_2824.A._M_value),imag(_odata+((ss)*72)->.A._M_value),real(_T44138928_2824.A._M_value),real(_odata+((ss)*72)->.A._M_value) prevents parallelization
+              Loop carried scalar dependence for .Q0012 at line 32
+std::complex<T1> std::operator *<float>(const std::complex<T1> &, const std::complex<T1> &):
+      7, include "su3.h"
+           3, include "complex"
+              382, Generating implicit acc routine seq
+su3::operator *=(su3::Su3<float>, const su3::Su3<float> &):
+      7, include "su3.h"
+          39, Generating acc routine seq
+su3::operator *(const su3::Su3<float> &, const su3::Su3<float> &):
+      7, include "su3.h"
+          60, Generating acc routine seq
+decltype((((param#2.Op).func)(eval(param#1, (param#2.arg1)), eval(param#1, (param#2.arg2))))) ET::eval<ET::BinaryMul<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1))), decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>, ET::Lattice<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>, ET::Lattice<decltype((ET::eval<su3::Su3<float>>((unsigned int)0, param#1)))>>(unsigned int, const ET::LatticeBinaryExpression<T1, T2, T3> &):
+    124, Generating implicit acc routine seq
+#pgc++ -I. -w -acc -fast -ta=multicore -Minline --c++11 -Mlarge_arrays -Minfo=accel --no_exceptions -O3 ET-su3.cc -o gpu-su3.x
+====================================================================================================
+DISCLAIMER: THIS IS NOT Grid, but definitely looks like Grid
+====================================================================================================
+Grid is setup to use 1 threads
+====================================================================================================
+= Benchmarking SU3xSU3  x= x*y
+====================================================================================================
+  L  		bytes			GB/s		 GFlop/s
+----------------------------------------------------------
+==32811== NVPROF is profiling process 32811, command: ./gpu-su3.x
+2		2.3e+03    		0.0188		0.0172
+4		3.69e+04    		0.384		0.352
+6		1.87e+05    		1.94		1.78
+8		5.9e+05    		5.27		4.83
+10		1.44e+06    		7.94		7.28
+12		2.99e+06    		15.2		13.9
+14		5.53e+06    		19.1		17.5
+16		9.44e+06    		22.1		20.2
+18		1.51e+07    		25.1		23
+20		2.3e+07    		26.1		23.9
+22		3.37e+07    		27.1		24.9
+24		4.78e+07    		27.9		25.5
+26		6.58e+07    		28.2		25.9
+28		8.85e+07    		28.6		26.2
+30		1.17e+08    		29		26.6
+32		1.51e+08    		29.2		26.8
+==32811== Profiling application: ./gpu-su3.x
+==32811== Profiling result:
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 99.50%  28.7823s     16000  1.7989ms  17.441us  7.6593ms  _ZN2ET7LatticeIN3su33Su3IfEEEaSINS_9BinaryMulIS3_S3_EES4_S4_EERS4_RKNS_23LatticeBinaryExpressionIT_T0_T1_EE_90_gpu
+  0.31%  88.937ms     32096  2.7700us  2.4320us  12.705us  [CUDA memcpy HtoD]
+  0.19%  56.287ms        48  1.1726ms  5.7920us  8.2843ms  _ZN2ET7LatticeIN3su33Su3IfEEEaSERKS3__74_gpu
+
+==32811== Unified Memory profiling result:
+Device "Tesla K40m (0)"
+   Count  Avg Size  Min Size  Max Size  Total Size  Total Time  Name
+     459  1.7515MB  4.0000KB  2.0000MB  803.9531MB  137.8130ms  Host To Device
+   11276  73.109KB  4.0000KB  988.00KB  805.0664MB  138.9695ms  Device To Host
+Total CPU Page faults: 7083
+
+==32811== API calls:
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 93.35%  29.2213s     64192  455.22us  2.0660us  8.2897ms  cuStreamSynchronize
+  3.16%  987.62ms     16048  61.541us  28.365us  37.640ms  cuLaunchKernel
+  0.96%  299.01ms         1  299.01ms  299.01ms  299.01ms  cuDevicePrimaryCtxRetain
+  0.89%  278.50ms     32096  8.6760us  5.2730us  855.70us  cuMemcpyHtoDAsync
+  0.86%  270.37ms         1  270.37ms  270.37ms  270.37ms  cuDevicePrimaryCtxRelease
+  0.36%  114.19ms        96  1.1894ms  9.1080us  20.755ms  cuMemAllocManaged
+  0.20%  61.722ms         1  61.722ms  61.722ms  61.722ms  cuMemHostAlloc
+  0.17%  53.999ms     64194     841ns     387ns  528.12us  cuPointerGetAttributes
+  0.04%  12.315ms         1  12.315ms  12.315ms  12.315ms  cuMemFreeHost
+  0.00%  1.2583ms         1  1.2583ms  1.2583ms  1.2583ms  cuMemAllocHost
+  0.00%  570.64us         3  190.21us  19.785us  284.36us  cuMemAlloc
+  0.00%  409.44us         1  409.44us  409.44us  409.44us  cuModuleLoadData
+  0.00%  59.369us         1  59.369us  59.369us  59.369us  cuStreamCreate
+  0.00%  9.5510us         3  3.1830us     983ns  6.6490us  cuDeviceGetCount
+  0.00%  8.0550us         2  4.0270us  1.3710us  6.6840us  cuModuleGetFunction
+  0.00%  6.1390us         2  3.0690us  1.9820us  4.1570us  cuCtxSetCurrent
+  0.00%  4.4970us         2  2.2480us     574ns  3.9230us  cuMemFree
+  0.00%  4.4710us         3  1.4900us     862ns  2.0050us  cuDeviceGet
+  0.00%  3.9260us         4     981ns     571ns  1.5470us  cuDeviceGetAttribute
+  0.00%  1.2530us         1  1.2530us  1.2530us  1.2530us  cuDeviceComputeCapability
+  0.00%  1.0900us         1  1.0900us  1.0900us  1.0900us  cuCtxGetDevice
+
+==32811== OpenACC (excl):
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 92.95%  28.9252s     16000  1.8078ms  12.354us  7.7552ms  acc_compute_construct@ET-su3.cc:90
+  2.85%  887.73ms     16000  55.483us  30.546us  1.4008ms  acc_enqueue_launch@ET-su3.cc:90 (_ZN2ET7LatticeIN3su33Su3IfEEEaSINS_9BinaryMulIS3_S3_EES4_S4_EERS4_RKNS_23LatticeBinaryExpressionIT_T0_T1_EE_90_gpu)
+  1.19%  369.61ms     48000  7.7000us  3.3320us  532.90us  acc_wait@ET-su3.cc:90
+  1.04%  322.94ms     32000  10.091us  6.2740us  860.23us  acc_enqueue_upload@ET-su3.cc:90
+  0.63%  196.53ms     32000  6.1410us  4.3100us  550.52us  acc_enter_data@ET-su3.cc:90
+  0.47%  147.07ms     32000  4.5950us  2.4180us  533.78us  acc_exit_data@ET-su3.cc:90
+  0.47%  146.31ms        48  3.0481ms  31.374us  37.647ms  acc_enqueue_launch@ET-su3.cc:74 (_ZN2ET7LatticeIN3su33Su3IfEEEaSERKS3__74_gpu)
+  0.20%  63.435ms        96  660.78us  4.5170us  62.571ms  acc_enter_data@ET-su3.cc:74
+  0.18%  56.827ms        48  1.1839ms  17.140us  8.2951ms  acc_compute_construct@ET-su3.cc:74
+  0.00%  1.2857ms        96  13.392us  6.6110us  105.20us  acc_enqueue_upload@ET-su3.cc:74
+  0.00%  1.2719ms       144  8.8320us  3.4680us  36.649us  acc_wait@ET-su3.cc:74
+  0.00%  573.63us        96  5.9750us  2.5420us  90.016us  acc_exit_data@ET-su3.cc:74
+  0.00%  517.04us         1  517.04us  517.04us  517.04us  acc_device_init
+  0.00%  7.5060us         1  7.5060us  7.5060us  7.5060us  acc_exit_data@ET-su3.cc:29
+  0.00%       0ns        96       0ns       0ns       0ns  acc_create@ET-su3.cc:74
+  0.00%       0ns        48       0ns       0ns       0ns  acc_delete@ET-su3.cc:80
+  0.00%       0ns         2       0ns       0ns       0ns  acc_alloc@ET-su3.cc:74
+  0.00%       0ns     16000       0ns       0ns       0ns  acc_delete@ET-su3.cc:95
+  0.00%       0ns     16000       0ns       0ns       0ns  acc_delete@ET-su3.cc:96
+  0.00%       0ns        48       0ns       0ns       0ns  acc_delete@ET-su3.cc:79
+  0.00%       0ns     32000       0ns       0ns       0ns  acc_create@ET-su3.cc:90
+====================================================================================================
+DISCLAIMER: THIS IS NOT Grid, but definitely looks like Grid
+====================================================================================================
+Grid is setup to use 1 threads
+====================================================================================================
+= Benchmarking SU3xSU3  x= x*y
+====================================================================================================
+  L  		bytes			GB/s		 GFlop/s
+----------------------------------------------------------
+2		2.3e+03    		0.0222		0.0203
+4		3.69e+04    		0.371		0.34
+6		1.87e+05    		1.88		1.72
+8		5.9e+05    		5.5		5.04
+10		1.44e+06    		10.8		9.9
+12		2.99e+06    		14.9		13.7
+14		5.53e+06    		18.9		17.3
+16		9.44e+06    		22.5		20.6
+18		1.51e+07    		24.9		22.8
+20		2.3e+07    		26		23.8
+22		3.37e+07    		27		24.7
+24		4.78e+07    		27.8		25.5
+26		6.58e+07    		28.3		26
+28		8.85e+07    		28.7		26.3
+30		1.17e+08    		29		26.6
+32		1.51e+08    		29.2		26.7
+
+Accelerator Kernel Timing data
+/lfs1/home/ccai/ET-SU3/ET-su3.cc
+  _ZN3su33Su3IfED1Ev  NVIDIA  devicenum=0
+    time(us): 0
+    29: data region reached 1 time
+/lfs1/home/ccai/ET-SU3/ET-su3.cc
+  _ZN2ET7LatticeIN3su33Su3IfEEEaSERKS3_  NVIDIA  devicenum=0
+    time(us): 82,892
+    74: compute region reached 48 times
+        74: kernel launched 48 times
+            grid: [1-8192]  block: [128]
+             device time(us): total=81,838 max=8,293 min=7 avg=1,704
+            elapsed time(us): total=228,636 max=45,712 min=63 avg=4,763
+    74: data region reached 192 times
+        74: data copyin transfers: 96
+             device time(us): total=1,054 max=50 min=4 avg=10
+/lfs1/home/ccai/ET-SU3/ET-su3.cc
+  _ZN2ET7LatticeIN3su33Su3IfEEEaSINS_9BinaryMulIS3_S3_EES4_S4_EERS4_RKNS_23LatticeBinaryExpressionIT_T0_T1_EE  NVIDIA  devicenum=0
+    time(us): 29,070,052
+    90: compute region reached 16000 times
+        90: kernel launched 16000 times
+            grid: [1-8192]  block: [128]
+             device time(us): total=28,822,982 max=7,669 min=19 avg=1,801
+            elapsed time(us): total=29,799,155 max=7,851 min=69 avg=1,862
+    90: data region reached 64000 times
+        90: data copyin transfers: 32000
+             device time(us): total=247,070 max=351 min=4 avg=7
+**********************
